@@ -5,6 +5,9 @@
 }
 
 <div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    <h1 class="display-4">Pokemon Damage Calc</h1>
+    @{
+        Pokemon gengar = new Pokemon(94, "Gengar", 100, Project6_PokemonDamageCalc.Type.ghost, Project6_PokemonDamageCalc.Type.poison, 65, 60, 130, 75, 1.5, 40.5);
+    }
+    <pre>@gengar.toString()</pre>
 </div>

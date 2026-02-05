@@ -3,11 +3,30 @@
 @{
     ViewData["Title"] = "Home page";
 }
-
-<div class="text-center">
-    <h1 class="display-4">Pokemon Damage Calc</h1>
-    @{
+ @{
         Pokemon gengar = new Pokemon(94, "Gengar", 100, Project6_PokemonDamageCalc.Type.ghost, Project6_PokemonDamageCalc.Type.poison, 65, 60, 130, 75, 1.5, 40.5);
+        Pokemon jirachi = new Pokemon(385, "Jirachi", 89, Project6_PokemonDamageCalc.Type.steel, Project6_PokemonDamageCalc.Type.psychic, 100, 100, 100, 100, 0.3, 1.1);
+        Move shadowball = new Move(80, Project6_PokemonDamageCalc.Type.ghost, Movecategory.special);
+
     }
+
+    <h1 class="display-4">Pokemon Damage Calculator</h1>
+<div class="flex-container">
+    <div class="element1">
+    <h2>Attacker</h2>
     <pre>@gengar.toString()</pre>
+    </div>
+    <div class="element2">
+    <h2>Defender</h2>
+    <pre>@jirachi.toString()</pre>
+    </div>
 </div>
+
+
+
+   <! Search for Pokemon to add to team>
+<form action="search" method="get">
+    <label for="pkmnsearch">Search for Pokemon</label>
+    <input type="search" id="pkmnsearch" />
+    <button type="submit">Go</button>
+</form>

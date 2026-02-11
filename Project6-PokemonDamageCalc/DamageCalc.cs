@@ -1,7 +1,7 @@
 ﻿namespace Project6_PokemonDamageCalc {
     public class DamageCalc {
 
-        public void preparecalc() {
+        public void OUTDATEDpreparecalc() {
             //Need:
             //2 pokemon, a move, 
 
@@ -59,7 +59,7 @@
                 "\nRandom(roll): " + random + "(" + rr + ")";
             */
         }
-        public double eee(Pokemon Atkr, Pokemon Defr, Move move) {
+        public static double PrepareCalc(Pokemon Atkr, Pokemon Defr, Move move) {
             double Typemod = TypeChart.getEffective(move.getMoveType(), Defr.gett1())
                              * TypeChart.getEffective(move.getMoveType(), Defr.gett2());
 
@@ -96,7 +96,7 @@
             return damage;
 
         }
-        public double calcDamage(int lvl, int power, int atk, int def, double stab, double Type, double crit, double random) {
+        public static double calcDamage(int lvl, int power, int atk, int def, double stab, double Type, double crit, double random) {
             //DEFENSE CANNOT BE ZERO
             return ((((lvl * 2 / 5) + 2) * power * atk / def / 50) + 2) * crit * random * stab * Type;
         }

@@ -61,8 +61,8 @@
                 + "\nLevel: " + this.lvl
                 + "\n" + this.type1 + "  " + this.type2
                 + "\nHeight: " + height + "m  Weight: " + weight
-                + "\nHP: " + this.hp
-                + "kg\nAtk: " + this.atk
+                + "kg\nHP: " + this.hp
+                + "\nAtk: " + this.atk
                 + "\nDef: " + this.def
                 + "\nSp Atk: " + this.spatk
                 + "\nSp Def: " + this.spdef;

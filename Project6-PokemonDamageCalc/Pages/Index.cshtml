@@ -15,14 +15,47 @@
     <div class="element1">
         <h2>Attacker</h2>
         <pre>@(Model.Attacker?.toString() ?? "Attacker not found in DB")</pre>
+        <cache>Level:</cache>
+        <input id="atklvl" name="atklvl" type="text" placeholder="100" />
     </div>
 
     <div class="element2">
         <h2>Defender</h2>
         <pre>@(Model.Defender?.toString() ?? "Defender not found in DB")</pre>
+        <a>Level:</a>
+        <input id="deflvl" name="deflvl" type="text" placeholder="100" />
+    </div>
+    <div class="element3">
+        <h2>Move</h2>
+        <br />
+        <a>Choose a type</a>
+        <select name="types" id="types">
+            <option value="Normal">Normal</option>
+            <option value="Fire">Fire</option>
+            <option value="Water">Water</option>
+            <option value="Electric">Electric</option>
+            <option value="Grass">Grass</option>
+            <option value="Ice">Ice</option>
+            <option value="Fighting">Fighting</option>
+            <option value="Poison">Poison</option>
+            <option value="Ground">Ground</option>
+            <option value="Flying">Flying</option>
+            <option value="Psychic">Psychic</option>
+            <option value="Bug">Bug</option>
+            <option value="Rock">Rock</option>
+            <option value="Ghost">Ghost</option>
+            <option value="Dragon">Dragon</option>
+            <option value="Dark">Dark</option>
+            <option value="Steel">Steel</option>
+            <option value="Fairy">Fairy</option>
+        </select>
+        <br />
+        <br />
+        <a>Power</a>
+        <input id="power" name="power" type="text" placeholder="85" />
     </div>
 </div>
-
+<br />
 <!-- Search (baseline): make sure name attribute exists -->
 <form method="get">
     <label for="attackerName">Attacker name</label>

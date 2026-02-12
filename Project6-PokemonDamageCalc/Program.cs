@@ -51,6 +51,11 @@ builder.Services.AddSingleton(sp =>
 builder.Services.AddSingleton<AccountService>();
 builder.Services.AddSingleton<PokelistService>();
 
+builder.Services.AddHttpClient("api", client =>
+{
+    client.BaseAddress = new Uri("http://localhost:5006");
+});
+
 // Add services to the container.
 builder.Services.AddRazorPages();
 

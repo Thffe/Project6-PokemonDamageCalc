@@ -1,32 +1,79 @@
 ﻿@page
-@model IndexModel
+@model Project6_PokemonDamageCalc.Pages.IndexModel
 @{
     ViewData["Title"] = "Home page";
 }
- @{
-        Pokemon gengar = new Pokemon(94, "Gengar", 100, Project6_PokemonDamageCalc.Type.ghost, Project6_PokemonDamageCalc.Type.poison, 65, 60, 130, 75, 1.5, 40.5);
-        Pokemon jirachi = new Pokemon(385, "Jirachi", 89, Project6_PokemonDamageCalc.Type.steel, Project6_PokemonDamageCalc.Type.psychic, 100, 100, 100, 100, 0.3, 1.1);
-        Move shadowball = new Move(80, Project6_PokemonDamageCalc.Type.ghost, Movecategory.special);
 
-    }
+<h1 class="display-4">Pokemon Damage Calculator</h1>
 
-    <h1 class="display-4">Pokemon Damage Calculator</h1>
+@if (Model.Attacker == null || Model.Defender == null)
+{
+    <p style="color:red;">One or more Pokémon names weren’t found. Try exact names (ex: Gengar).</p>
+}
+
 <div class="flex-container">
     <div class="element1">
-    <h2>Attacker</h2>
-    <pre>@gengar.toString()</pre>
+        <h2>Attacker</h2>
+        <pre>@(Model.Attacker?.toString() ?? "Attacker not found in DB")</pre>
     </div>
+
     <div class="element2">
-    <h2>Defender</h2>
-    <pre>@jirachi.toString()</pre>
+        <h2>Defender</h2>
+        <pre>@(Model.Defender?.toString() ?? "Defender not found in DB")</pre>
     </div>
 </div>
 
+<!-- Search (baseline): make sure name attribute exists -->
+<form method="get">
+    <label for="attackerName">Attacker name</label>
+    <input type="search"
+           id="attackerName"
+           name="attackerName"
+           list="attackerSuggestions"
+           autocomplete="off" />
+    <datalist id="attackerSuggestions"></datalist>
 
+    <label for="defenderName">Defender name</label>
+    <input type="search"
+           id="defenderName"
+           name="defenderName"
+           list="defenderSuggestions"
+           autocomplete="off" />
+    <datalist id="defenderSuggestions"></datalist>
 
-   <! Search for Pokemon to add to team>
-<form action="search" method="get">
-    <label for="pkmnsearch">Search for Pokemon</label>
-    <input type="search" id="pkmnsearch" />
-    <button type="submit">Go</button>
+    <button type="submit">Load</button>
 </form>
+
+<script>
+    function debounce(fn, delayMs) {
+      let t;
+      return (...args) => {
+        clearTimeout(t);
+        t = setTimeout(() => fn(...args), delayMs);
+      };
+    }
+
+    async function updateSuggestions(inputEl, datalistEl) {
+      const term = inputEl.value.trim();
+      datalistEl.innerHTML = "";
+      if (term.length < 2) return; // don’t spam DB on 1 char
+
+      const resp = await fetch(`/api/pokemon/search?term=${encodeURIComponent(term)}`);
+      if (!resp.ok) return;
+
+      const results = await resp.json();
+      for (const r of results) {
+        const opt = document.createElement("option");
+        opt.value = r.name;  // IMPORTANT: datalist uses "value"
+        datalistEl.appendChild(opt);
+      }
+    }
+
+    const attacker = document.getElementById("attackerName");
+    const defender = document.getElementById("defenderName");
+    const attackerList = document.getElementById("attackerSuggestions");
+    const defenderList = document.getElementById("defenderSuggestions");
+
+    attacker.addEventListener("input", debounce(() => updateSuggestions(attacker, attackerList), 150));
+    defender.addEventListener("input", debounce(() => updateSuggestions(defender, defenderList), 150));
+</script>

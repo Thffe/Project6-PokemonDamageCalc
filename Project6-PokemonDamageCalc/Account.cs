@@ -9,23 +9,23 @@ namespace Project6_PokemonDamageCalc
         //mongo doc PK (ID) = accountID
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public int accountID { get; set; }
+        public string? Id { get; set; }   // Mongo _id
 
         [BsonElement("username")]
-        public string username {  get; set; } = string.Empty;
+        public string username { get; set; } = string.Empty;
 
-        //base64 keeps load stay json 
         [BsonElement("pfp")]
-        public string pfp { get; set; } = null!;
+        public string? pfp { get; set; }  // allow null
 
         [BsonElement("pfpType")]
-        public string pfpType { get; set; } = null!; // "image/png", "image/jpeg"
+        public string? pfpType { get; set; }
+
 
         public Account() { }
 
-        public Account(int accountID, string username)
+        public Account(string accountID, string username)
         {
-            this.accountID=accountID;
+            this.Id=accountID;
             this.username=username;
         }
 

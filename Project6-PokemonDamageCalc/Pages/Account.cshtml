@@ -1,0 +1,32 @@
+﻿@page
+@model Project6_PokemonDamageCalc.Pages.AccountModel
+@{
+    ViewData["Title"] = "Account";
+}
+
+<h1>Account</h1>
+
+@if (!string.IsNullOrWhiteSpace(Model.Message))
+{
+    <p><b>@Model.Message</b></p>
+}
+
+<h2>Create / Login (username only)</h2>
+<form method="post">
+    <label>Username:</label>
+    <input type="text" name="Username" required />
+    <button type="submit">Create/Login</button>
+</form>
+
+@if (Model.CurrentAccount is not null)
+{
+    <hr />
+    <h2>Current Account</h2>
+    <p><b>Username:</b> @Model.CurrentAccount.username</p>
+    <p><b>AccountId:</b> @Model.CurrentAccount.id</p>
+
+    <form method="post" asp-page-handler="Delete">
+        <input type="hidden" name="id" value="@Model.CurrentAccount.id" />
+        <button type="submit">Delete Account</button>
+    </form>
+}

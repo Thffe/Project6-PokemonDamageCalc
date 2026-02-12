@@ -2,6 +2,10 @@ using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Project6_PokemonDamageCalc;
+using Project6_PokemonDamageCalc.Endpoints;
+using Project6_PokemonDamageCalc.Services;
+using System.Text.RegularExpressions;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,11 +48,16 @@ builder.Services.AddSingleton(sp => sp.GetRequiredService<IMongoClient>().GetDat
 builder.Services.AddSingleton(sp =>
     sp.GetRequiredService<IMongoDatabase>().GetCollection<PokemonDocument>(mongoCollectionName));
 
+builder.Services.AddSingleton<AccountService>();
+builder.Services.AddSingleton<PokelistService>();
+
 // Add services to the container.
 builder.Services.AddRazorPages();
 
 var app = builder.Build();
 
+app.mapAccEndp();
+app.mapPokelistEndp();
 // Test endpoint
 app.MapGet("/db-test", async ([FromServices] IMongoDatabase db) =>
 {
@@ -69,8 +78,35 @@ app.MapGet("/api/pokemon", async ([FromServices] IMongoCollection<PokemonDocumen
     if (string.IsNullOrWhiteSpace(name))
         return Results.BadRequest("Missing ?name=");
 
-    var doc = await col.Find(x => x.Name == name).FirstOrDefaultAsync();
+    var filter = Builders<PokemonDocument>.Filter.Regex(
+    x => x.Name,
+    new MongoDB.Bson.BsonRegularExpression($"^{Regex.Escape(name)}$", "i")
+);
+
+    var doc = await col.Find(filter).FirstOrDefaultAsync();
     return doc is null ? Results.NotFound() : Results.Ok(doc);
+});
+
+// API search endpoint:
+app.MapGet("/api/pokemon/search", async (
+    IMongoCollection<PokemonDocument> col,
+    string term) =>
+{
+    if (string.IsNullOrWhiteSpace(term))
+        return Results.Ok(Array.Empty<object>());
+
+    // Case-insensitive "contains"
+    var filter = Builders<PokemonDocument>.Filter.Regex(
+        x => x.Name,
+        new MongoDB.Bson.BsonRegularExpression(term, "i")
+    );
+
+    var results = await col.Find(filter)
+        .Limit(10)
+        .Project(x => new { x.Name, x.PokedexNumber })
+        .ToListAsync();
+
+    return Results.Ok(results);
 });
 
 if (!app.Environment.IsDevelopment())

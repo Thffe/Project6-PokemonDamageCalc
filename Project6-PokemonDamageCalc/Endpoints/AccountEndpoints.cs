@@ -1,40 +1,43 @@
-﻿using Project6_PokemonDamageCalc.DataTransferObjs;
-using Project6_PokemonDamageCalc.Services;
+﻿using Project6_PokemonDamageCalc.Services;
 using static Project6_PokemonDamageCalc.DataTransferObjs.AccountDTOs;
 
 namespace Project6_PokemonDamageCalc.Endpoints
 {
     public static class AccountEndpoints
     {
-
         public static void mapAccEndp(this WebApplication app)
         {
-            //base route, enpoint grouping
             var group = app.MapGroup("/api/accounts");
 
-            //options for collection: GET, POST, OPTIONS
+            // OPTIONS for collection
             group.MapMethods("", new[] { "OPTIONS" }, () =>
                 Results.Json(new { allowedMethods = new[] { "GET", "POST", "OPTIONS" } })
             );
 
-            // options for items: GET, PUT, OPTIONS
+            // OPTIONS for item
             group.MapMethods("/{id}", new[] { "OPTIONS" }, () =>
-                Results.Json(new { allowedMethods = new[] { "GET", "PUT", "OPTIONS" } })
+                Results.Json(new { allowedMethods = new[] { "GET", "PUT", "PATCH", "DELETE", "OPTIONS" } })
             );
 
-            //GET /api/accounts
+            // GET /api/accounts?limit=20
             group.MapGet("", async (AccountService svc, int? limit) =>
             {
                 var items = await svc.getAllAsyncAccount(limit ?? 20);
                 return Results.Json(new { items });
             });
 
-            //GET /api/account/{id}
-            group.MapGet("/{id}", async (AccountService svc, int id) =>
+            // GET /api/accounts/{id}
+            group.MapGet("/{id}", async (AccountService svc, string id) =>
             {
                 var account = await svc.getAccountByID(id);
-                if (account == null) return Results.NotFound();
-                return Results.Json(account);
+                return account is null ? Results.NotFound() : Results.Json(account);
+            });
+
+            // GET /api/accounts/by-username/{username}
+            group.MapGet("/by-username/{username}", async (AccountService svc, string username) =>
+            {
+                var acc = await svc.getAccountByUsername(username.Trim());
+                return acc is null ? Results.NotFound() : Results.Json(acc);
             });
 
             // POST /api/accounts
@@ -45,15 +48,15 @@ namespace Project6_PokemonDamageCalc.Endpoints
 
                 var account = new Account
                 {
-                    username = dto.username.Trim(),
+                    username = dto.username.Trim()
                 };
 
                 await svc.createAccountAsync(account);
-                return Results.Created($"/api/accounts/{account.accountID}", account);
+                return Results.Created($"/api/accounts/{account.Id}", account);
             });
 
             // PUT /api/accounts/{id}
-            group.MapPut("/{id}", async (AccountService svc, int id, accountReplaceDTO dto) =>
+            group.MapPut("/{id}", async (AccountService svc, string id, accountReplaceDTO dto) =>
             {
                 if (string.IsNullOrWhiteSpace(dto.username))
                     return Results.BadRequest(new { ok = false, error = "username required" });
@@ -63,16 +66,33 @@ namespace Project6_PokemonDamageCalc.Endpoints
 
                 var replacement = new Account
                 {
-                    accountID = id,
+                    Id = id,
                     username = dto.username.Trim(),
                     pfp = dto.pfp,
-                    pfpType = dto.pfpType,
+                    pfpType = dto.pfpType
                 };
 
                 var ok = await svc.replaceAccountAsync(id, replacement);
                 return ok ? Results.Json(replacement) : Results.NotFound();
             });
-        }
 
+            // PATCH /api/accounts/{id}
+            group.MapPatch("/{id}", async (AccountService svc, string id, accountReplaceDTO dto) =>
+            {
+                var existing = await svc.getAccountByID(id);
+                if (existing is null) return Results.NotFound();
+
+                // For baseline, reuse accountReplaceDTO as “patch input”
+                var ok = await svc.patchAccountAsync(id, dto.username, dto.pfp, dto.pfpType);
+                return ok ? Results.Ok(new { ok = true }) : Results.BadRequest(new { ok = false, error = "No fields to update" });
+            });
+
+            // DELETE /api/accounts/{id}
+            group.MapDelete("/{id}", async (AccountService svc, string id) =>
+            {
+                var ok = await svc.deleteAccountAsync(id);
+                return ok ? Results.NoContent() : Results.NotFound();
+            });
+        }
     }
 }

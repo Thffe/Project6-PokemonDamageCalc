@@ -33,7 +33,7 @@ public class IndexModel : PageModel
     {
         // Your enum is lowercase. Dataset strings are Title case.
         var t1 = ParseType(d.Type1);
-        var t2 = string.IsNullOrWhiteSpace(d.Type2) ? Type.normal : ParseType(d.Type2);
+        var t2 = string.IsNullOrWhiteSpace(d.Type2) ? Type.Normal : ParseType(d.Type2);
 
         return new Pokemon(
             d.PokedexNumber,
@@ -41,6 +41,8 @@ public class IndexModel : PageModel
             lvl,
             t1,
             t2,
+            //NOT ACTUALLY GETTING HEALTH CURRENTLY (TEMP FIX)
+            300,
             d.Attack,
             d.Defense,
             d.SpAttack,
@@ -51,5 +53,5 @@ public class IndexModel : PageModel
     }
 
     private static Type ParseType(string s)
-        => Enum.TryParse<Type>(s, ignoreCase: true, out var t) ? t : Type.normal;
+        => Enum.TryParse<Type>(s, ignoreCase: true, out var t) ? t : Type.Normal;
 }

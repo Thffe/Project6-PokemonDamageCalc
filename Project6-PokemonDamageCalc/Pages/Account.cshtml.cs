@@ -1,57 +1,107 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Project6_PokemonDamageCalc.DataTransferObjs;
-using System.Net.Http.Json;
-using static Project6_PokemonDamageCalc.DataTransferObjs.AccountDTOs;
+using Project6_PokemonDamageCalc.Services;
+using System.Security.Claims;
 
 namespace Project6_PokemonDamageCalc.Pages;
 
 public class AccountModel : PageModel
 {
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly AccountService _accountService;
 
-    public AccountModel(IHttpClientFactory httpClientFactory)
+    public AccountModel(AccountService accountService)
     {
-        _httpClientFactory = httpClientFactory;
+        _accountService = accountService;
     }
 
     [BindProperty]
     public string Username { get; set; } = "";
 
-    public accountDTO? CurrentAccount { get; set; }
     public string? Message { get; set; }
 
-    public void OnGet()
+    public string? CurrentUsername { get; set; }
+    public string? CurrentAccountId { get; set; }
+
+    public async Task OnGetAsync()
     {
-        // optional: you could read a cookie/session later
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            CurrentUsername = User.Identity.Name;
+            CurrentAccountId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // If you want to verify it still exists in DB:
+            // var acc = await _accountService.getAccountByID(CurrentAccountId!);
+            // if (acc is null) { await HttpContext.SignOutAsync(); }
+        }
     }
 
-    public async Task<IActionResult> OnPostAsync()
+    // REGISTER
+    public async Task<IActionResult> OnPostRegisterAsync()
     {
-        var client = _httpClientFactory.CreateClient("api");
-
-        // You already built DTOs/endpoints — this assumes POST /api/accounts creates or returns existing
-        var res = await client.PostAsJsonAsync("/api/accounts", new accountCreateDTO(Username));
-
-        if (!res.IsSuccessStatusCode)
+        if (string.IsNullOrWhiteSpace(Username))
         {
-            Message = $"Account create/login failed: {(int)res.StatusCode}";
+            Message = "Username is required.";
             return Page();
         }
 
-        CurrentAccount = await res.Content.ReadFromJsonAsync<accountDTO>();
-        Message = "Account loaded.";
-        return Page();
+        var (account, error) = await _accountService.createAccountAsync(Username);
+        if (account is null)
+        {
+            Message = error ?? "Registration failed.";
+            return Page();
+        }
+
+        await SignInAccount(account.Id!, account.username);
+        Message = "Registered and logged in.";
+        return RedirectToPage();
     }
 
-    public async Task<IActionResult> OnPostDeleteAsync([FromForm] string id)
+    // LOGIN
+    public async Task<IActionResult> OnPostLoginAsync()
     {
-        var client = _httpClientFactory.CreateClient("api");
+        if (string.IsNullOrWhiteSpace(Username))
+        {
+            Message = "Username is required.";
+            return Page();
+        }
 
-        var res = await client.DeleteAsync($"/api/accounts/{id}");
-        Message = res.IsSuccessStatusCode ? "Account deleted." : $"Delete failed: {(int)res.StatusCode}";
-        CurrentAccount = null;
+        var acc = await _accountService.getAccountByUsername(Username);
+        if (acc is null)
+        {
+            Message = "Account not found. Register first.";
+            return Page();
+        }
 
-        return Page();
+        await SignInAccount(acc.Id!, acc.username);
+        Message = "Logged in.";
+        return RedirectToPage();
+    }
+
+    // LOGOUT
+    public async Task<IActionResult> OnPostLogoutAsync()
+    {
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        Message = "Logged out.";
+        return RedirectToPage();
+    }
+
+    private async Task SignInAccount(string id, string username)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, id),
+            new Claim(ClaimTypes.Name, username),
+        };
+
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var principal = new ClaimsPrincipal(identity);
+
+        await HttpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            principal,
+            new AuthenticationProperties { IsPersistent = true }
+        );
     }
 }

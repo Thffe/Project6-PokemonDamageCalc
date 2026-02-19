@@ -46,12 +46,11 @@ namespace Project6_PokemonDamageCalc.Endpoints
                 if (string.IsNullOrWhiteSpace(dto.username))
                     return Results.BadRequest(new { ok = false, error = "username required" });
 
-                var account = new Account
-                {
-                    username = dto.username.Trim()
-                };
+                var (account, error) = await svc.createAccountAsync(dto.username);
 
-                await svc.createAccountAsync(account);
+                if (account is null)
+                    return Results.Conflict(new { ok = false, error = error ?? "Username already exists." });
+
                 return Results.Created($"/api/accounts/{account.Id}", account);
             });
 

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -6,12 +7,9 @@ using Project6_PokemonDamageCalc.Endpoints;
 using Project6_PokemonDamageCalc.Services;
 using System.Text.RegularExpressions;
 
-
 var builder = WebApplication.CreateBuilder(args);
 
-// Use env var in Docker / teammates machines:
-//   MONGODB_URI="mongodb+srv://..."
-// Fallback only for local dev (can remove fallback later).
+// Mongo
 var mongoUri =
     Environment.GetEnvironmentVariable("MONGODB_URI")
     ?? builder.Configuration["MongoDb:ConnectionString"]
@@ -51,18 +49,33 @@ builder.Services.AddSingleton(sp =>
 builder.Services.AddSingleton<AccountService>();
 builder.Services.AddSingleton<PokelistService>();
 
+// Http Local host
 builder.Services.AddHttpClient("api", client =>
 {
     client.BaseAddress = new Uri("http://localhost:5006");
 });
 
-// Add services to the container.
+// Razor Pages
 builder.Services.AddRazorPages();
+
+// Cookie Auth
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "PokeAuth";
+        options.LoginPath = "/Account";
+        options.AccessDeniedPath = "/Account";
+        options.SlidingExpiration = true;
+        options.ExpireTimeSpan = TimeSpan.FromDays(7);
+    });
+
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
 app.mapAccEndp();
 app.mapPokelistEndp();
+
 // Test endpoint
 app.MapGet("/db-test", async ([FromServices] IMongoDatabase db) =>
 {
@@ -77,30 +90,27 @@ app.MapGet("/db-test", async ([FromServices] IMongoDatabase db) =>
     }
 });
 
-// API  test endpoint:
+// API test endpoint:
 app.MapGet("/api/pokemon", async ([FromServices] IMongoCollection<PokemonDocument> col, [FromQuery] string name) =>
 {
     if (string.IsNullOrWhiteSpace(name))
         return Results.BadRequest("Missing ?name=");
 
     var filter = Builders<PokemonDocument>.Filter.Regex(
-    x => x.Name,
-    new MongoDB.Bson.BsonRegularExpression($"^{Regex.Escape(name)}$", "i")
-);
+        x => x.Name,
+        new MongoDB.Bson.BsonRegularExpression($"^{Regex.Escape(name)}$", "i")
+    );
 
     var doc = await col.Find(filter).FirstOrDefaultAsync();
     return doc is null ? Results.NotFound() : Results.Ok(doc);
 });
 
 // API search endpoint:
-app.MapGet("/api/pokemon/search", async (
-    IMongoCollection<PokemonDocument> col,
-    string term) =>
+app.MapGet("/api/pokemon/search", async (IMongoCollection<PokemonDocument> col, string term) =>
 {
     if (string.IsNullOrWhiteSpace(term))
         return Results.Ok(Array.Empty<object>());
 
-    // Case-insensitive "contains"
     var filter = Builders<PokemonDocument>.Filter.Regex(
         x => x.Name,
         new MongoDB.Bson.BsonRegularExpression(term, "i")
@@ -123,6 +133,8 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapRazorPages();

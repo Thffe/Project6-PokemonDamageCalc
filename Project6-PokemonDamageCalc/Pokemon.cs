@@ -1,4 +1,7 @@
-﻿namespace Project6_PokemonDamageCalc {
+﻿using System.Buffers.Text;
+
+namespace Project6_PokemonDamageCalc {
+
     public class Pokemon {
         int pokedexID, lvl;
         string name;
@@ -7,23 +10,30 @@
         double height, weight;
         int hp, atk, def, spatk, spdef;
 
-        public Pokemon(int lvl, Type t1, Type t2,int hp, int atk, int def, int spatk, int spdef) {
+        private static int CalculateHp(int baseHp, int level)
+        {
+            // Simplified formula
+            return (int)Math.Floor((2.0 * baseHp * level) / 100.0) + level + 10;
+        }
+
+
+        public Pokemon(int lvl, Type t1, Type t2,int basehp, int atk, int def, int spatk, int spdef) {
             this.lvl = lvl;
             this.type1 = t1;
             this.type2 = t2;
-            this.hp = hp;
+            this.hp = CalculateHp(basehp, lvl);
             this.atk = atk;
             this.def = def;
             this.spatk = spatk;
             this.spdef = spdef;
         }
-        public Pokemon(int dex, string name, int lvl, Type t1, Type t2, int hp, int atk, int def, int spatk, int spdef, double height, double weight) {
+        public Pokemon(int dex, string name, int lvl, Type t1, Type t2, int basehp, int atk, int def, int spatk, int spdef, double height, double weight) {
             this.pokedexID = dex;
             this.name = name;
             this.lvl = lvl;
             this.type1 = t1;
             this.type2 = t2;
-            this.hp = hp;
+            this.hp = CalculateHp(basehp, lvl);
             this.atk = atk;
             this.def = def;
             this.spatk = spatk;

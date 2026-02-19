@@ -21,6 +21,9 @@ public class PokemonDocument
     [BsonElement("type_2")]
     public string? Type2 { get; set; }
 
+    [BsonElement("hp")]
+    public int Hp { get; set; }
+
     [BsonElement("attack")]
     public int Attack { get; set; }
 

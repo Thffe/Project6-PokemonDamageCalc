@@ -191,7 +191,7 @@ public class IndexModel : PageModel
             lvl,
             t1,
             t2,
-            300, // TODO: replace with real HP when you add it to PokemonDocument
+            d.Hp,
             d.Attack,
             d.Defense,
             d.SpAttack,

@@ -1,4 +1,7 @@
-﻿<!DOCTYPE html>
+﻿@using Project6_PokemonDamageCalc.Services
+@inject CurrentAccountViewService CurrentAccountView
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -9,6 +12,10 @@
     <link rel="stylesheet" href="~/Project6_PokemonDamageCalc.styles.css" asp-append-version="true" />
 </head>
 <body>
+    @{
+        var (navUser, navPfp) = await CurrentAccountView.GetAsync(User);
+    }
+
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container">
@@ -17,7 +24,9 @@
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
+
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <!-- Left side nav links -->
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-page="/Index">Home</a>
@@ -25,14 +34,36 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-page="/Privacy">Privacy</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-page="/Account">Account</a>
-                        </li>
+                    </ul>
+
+                    <!-- Right side user info -->
+                    <ul class="navbar-nav">
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center gap-2" asp-page="/Account" title="Account">
+                                    @if (!string.IsNullOrWhiteSpace(navPfp))
+                                    {
+                                        <img src="@navPfp"
+                                             alt="Profile picture"
+                                             style="width:32px;height:32px;border-radius:999px;object-fit:cover;border:1px solid #ccc;" />
+                                    }
+                                    <span class="fw-semibold">@navUser</span>
+                                </a>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-page="/Account">Login</a>
+                            </li>
+                        }
                     </ul>
                 </div>
             </div>
         </nav>
     </header>
+
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()

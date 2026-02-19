@@ -48,6 +48,7 @@ builder.Services.AddSingleton(sp =>
 
 builder.Services.AddSingleton<AccountService>();
 builder.Services.AddSingleton<PokelistService>();
+builder.Services.AddScoped<CurrentAccountViewService>();
 
 // Http Local host
 builder.Services.AddHttpClient("api", client =>

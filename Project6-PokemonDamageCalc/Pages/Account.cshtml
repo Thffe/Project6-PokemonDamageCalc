@@ -17,7 +17,21 @@
     <p><b>Username:</b> @Model.CurrentUsername</p>
     <p><b>AccountId:</b> @Model.CurrentAccountId</p>
 
-    <form method="post" asp-page-handler="Logout">
+    @if (!string.IsNullOrWhiteSpace(Model.CurrentPfpUrl))
+    {
+        <div style="margin:10px 0;">
+            <p><b>Profile Picture:</b></p>
+            <img src="@Model.CurrentPfpUrl" alt="Profile picture" style="max-width:180px; border:1px solid #ccc; padding:4px;" />
+        </div>
+    }
+
+    <h3>Upload / Change Profile Picture</h3>
+    <form method="post" asp-page-handler="UploadPfp" enctype="multipart/form-data">
+        <input type="file" asp-for="ProfilePicture" accept="image/png,image/jpeg,image/webp,image/gif" />
+        <button type="submit">Upload</button>
+    </form>
+
+    <form method="post" asp-page-handler="Logout" style="margin-top: 10px;">
         <button type="submit">Logout</button>
     </form>
 }

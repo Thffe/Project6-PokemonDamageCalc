@@ -85,5 +85,15 @@ namespace Project6_PokemonDamageCalc.Services
             var result = await _accounts.DeleteOneAsync(a => a.Id == id);
             return result.DeletedCount == 1;
         }
+
+        public async Task<bool> updateProfilePicAsync(string accountId, string pfpUrl, string contentType)
+        {
+            var update = Builders<Account>.Update
+                .Set(a => a.pfp, pfpUrl)
+                .Set(a => a.pfpType, contentType);
+
+            var result = await _accounts.UpdateOneAsync(a => a.Id == accountId, update);
+            return result.MatchedCount == 1;
+        }
     }
 }

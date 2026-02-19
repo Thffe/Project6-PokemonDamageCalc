@@ -10,19 +10,26 @@ namespace Project6_PokemonDamageCalc.Pages;
 public class AccountModel : PageModel
 {
     private readonly AccountService _accountService;
+    private readonly IWebHostEnvironment _env;
 
-    public AccountModel(AccountService accountService)
+    public AccountModel(AccountService accountService, IWebHostEnvironment env)
     {
         _accountService = accountService;
+        _env = env;
     }
 
     [BindProperty]
     public string Username { get; set; } = "";
 
+    // For upload
+    [BindProperty]
+    public IFormFile? ProfilePicture { get; set; }
+
     public string? Message { get; set; }
 
     public string? CurrentUsername { get; set; }
     public string? CurrentAccountId { get; set; }
+    public string? CurrentPfpUrl { get; set; }
 
     public async Task OnGetAsync()
     {
@@ -31,9 +38,15 @@ public class AccountModel : PageModel
             CurrentUsername = User.Identity.Name;
             CurrentAccountId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            // If you want to verify it still exists in DB:
-            // var acc = await _accountService.getAccountByID(CurrentAccountId!);
-            // if (acc is null) { await HttpContext.SignOutAsync(); }
+            if (!string.IsNullOrWhiteSpace(CurrentAccountId))
+            {
+                var acc = await _accountService.getAccountByID(CurrentAccountId);
+                if (acc != null && !string.IsNullOrWhiteSpace(acc.pfp))
+                {
+                    // pfp is stored as "/uploads/xyz.png"
+                    CurrentPfpUrl = acc.pfp;
+                }
+            }
         }
     }
 
@@ -76,6 +89,73 @@ public class AccountModel : PageModel
 
         await SignInAccount(acc.Id!, acc.username);
         Message = "Logged in.";
+        return RedirectToPage();
+    }
+
+    // UPLOAD PFP
+    public async Task<IActionResult> OnPostUploadPfpAsync()
+    {
+        if (User.Identity?.IsAuthenticated != true)
+            return RedirectToPage("/Account");
+
+        var accountId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(accountId))
+            return RedirectToPage("/Account");
+
+        if (ProfilePicture is null || ProfilePicture.Length == 0)
+        {
+            Message = "Please choose an image file.";
+            return RedirectToPage();
+        }
+
+        // Basic limits (adjust if prof wants)
+        const long maxBytes = 2 * 1024 * 1024; // 2MB
+        if (ProfilePicture.Length > maxBytes)
+        {
+            Message = "File too large (max 2MB).";
+            return RedirectToPage();
+        }
+
+        var allowedTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "image/png", "image/jpeg", "image/webp", "image/gif"
+        };
+
+        if (!allowedTypes.Contains(ProfilePicture.ContentType))
+        {
+            Message = "Invalid file type. Use png/jpg/webp/gif.";
+            return RedirectToPage();
+        }
+
+        // Ensure uploads folder exists
+        var uploadsDir = Path.Combine(_env.WebRootPath, "uploads");
+        Directory.CreateDirectory(uploadsDir);
+
+        // Choose extension based on content type (safer than trusting filename)
+        var ext = ProfilePicture.ContentType switch
+        {
+            "image/png" => ".png",
+            "image/jpeg" => ".jpg",
+            "image/webp" => ".webp",
+            "image/gif" => ".gif",
+            _ => ".img"
+        };
+
+        var fileName = $"pfp_{accountId}_{Guid.NewGuid():N}{ext}";
+        var fullPath = Path.Combine(uploadsDir, fileName);
+
+        // Save file
+        using (var fs = new FileStream(fullPath, FileMode.Create))
+        {
+            await ProfilePicture.CopyToAsync(fs);
+        }
+
+        // Store relative URL in Mongo so it works on any machine
+        var urlPath = $"/uploads/{fileName}";
+
+        var ok = await _accountService.updateProfilePicAsync(accountId, urlPath, ProfilePicture.ContentType);
+        Message = ok ? "Profile picture updated." : "Failed to update profile picture.";
+
         return RedirectToPage();
     }
 

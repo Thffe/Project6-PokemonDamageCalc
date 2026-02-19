@@ -11,55 +11,61 @@ namespace Project6_PokemonDamageCalc.Services
             _pokelists = db.GetCollection<Pokelist>("pokelists");
         }
 
-        public async Task<List<Pokelist>> getAllPokelistsAsync(int limit = 50)
-            => await _pokelists.Find(_ => true).Limit(limit).ToListAsync();
-
-        public async Task<List<Pokelist>> getPokelistsFromAnAccount(string accountId, int limit = 50)
-            => await _pokelists.Find(p => p.accountId == accountId).Limit(limit).ToListAsync();
-
-        public async Task<Pokelist?> getByTeamIDAsync(string id)
-            => await _pokelists.Find(p => p.Id == id).FirstOrDefaultAsync();
-
-        public async Task<Pokelist> createPokelistAsync(Pokelist list)
+        public async Task<Pokelist> GetOrCreateActiveAsync(string accountId)
         {
-            await _pokelists.InsertOneAsync(list);
+            var existing = await _pokelists.Find(p => p.accountId == accountId).FirstOrDefaultAsync();
+            if (existing != null) return existing;
+
+            var created = new Pokelist
+            {
+                accountId = accountId,
+                createdUtc = DateTime.UtcNow,
+                updatedUtc = DateTime.UtcNow,
+                entries = new List<CalcEntry>()
+            };
+
+            await _pokelists.InsertOneAsync(created);
+            return created;
+        }
+
+        // entryIndex: 0,1,2 (max 3 entries)
+        public async Task<Pokelist> AddOrReplaceEntryAsync(string accountId, int entryIndex, CalcEntry entry)
+        {
+            if (entryIndex < 0 || entryIndex > 2)
+                throw new ArgumentOutOfRangeException(nameof(entryIndex), "entryIndex must be 0, 1, or 2.");
+
+            var list = await GetOrCreateActiveAsync(accountId);
+
+            // Ensure list has correct size up to entryIndex
+            while (list.entries.Count <= entryIndex)
+                list.entries.Add(new CalcEntry());
+
+            list.entries[entryIndex] = entry;
+            list.updatedUtc = DateTime.UtcNow;
+
+            await _pokelists.ReplaceOneAsync(p => p.Id == list.Id, list);
             return list;
         }
 
-        // PUT = replace whole list
-        public async Task<bool> replaceAsync(string id, Pokelist newList)
-        {
-            newList.Id = id;
-            var result = await _pokelists.ReplaceOneAsync(p => p.Id == id, newList);
-            return result.MatchedCount == 1;
-        }
+        public async Task<Pokelist?> GetByIdAsync(string id)
+            => await _pokelists.Find(p => p.Id == id).FirstOrDefaultAsync();
 
-        // PATCH = update only some fields (whatever is not null)
-        public async Task<bool> patchAsync(string id, Pokelist patch)
-        {
-            var updates = new List<UpdateDefinition<Pokelist>>();
-
-            if (!string.IsNullOrWhiteSpace(patch.accountId))
-                updates.Add(Builders<Pokelist>.Update.Set(p => p.accountId, patch.accountId));
-
-            if (patch.poke1id != null) updates.Add(Builders<Pokelist>.Update.Set(p => p.poke1id, patch.poke1id));
-            if (patch.poke2id != null) updates.Add(Builders<Pokelist>.Update.Set(p => p.poke2id, patch.poke2id));
-            if (patch.poke3id != null) updates.Add(Builders<Pokelist>.Update.Set(p => p.poke3id, patch.poke3id));
-            if (patch.poke4id != null) updates.Add(Builders<Pokelist>.Update.Set(p => p.poke4id, patch.poke4id));
-            if (patch.poke5id != null) updates.Add(Builders<Pokelist>.Update.Set(p => p.poke5id, patch.poke5id));
-            if (patch.poke6id != null) updates.Add(Builders<Pokelist>.Update.Set(p => p.poke6id, patch.poke6id));
-
-            if (updates.Count == 0) return false;
-
-            var update = Builders<Pokelist>.Update.Combine(updates);
-            var result = await _pokelists.UpdateOneAsync(p => p.Id == id, update);
-            return result.MatchedCount == 1;
-        }
-
-        public async Task<bool> deleteAsync(string id)
+        public async Task<bool> DeleteByIdAsync(string id)
         {
             var result = await _pokelists.DeleteOneAsync(p => p.Id == id);
             return result.DeletedCount == 1;
+        }
+
+        public async Task<bool> ClearAsync(string accountId)
+        {
+            var list = await _pokelists.Find(p => p.accountId == accountId).FirstOrDefaultAsync();
+            if (list == null) return false;
+
+            list.entries.Clear();
+            list.updatedUtc = DateTime.UtcNow;
+
+            await _pokelists.ReplaceOneAsync(p => p.Id == list.Id, list);
+            return true;
         }
     }
 }

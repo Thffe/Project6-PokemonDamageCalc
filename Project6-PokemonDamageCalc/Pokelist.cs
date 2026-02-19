@@ -1,44 +1,58 @@
 ﻿using MongoDB.Bson;
-
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace Project6_PokemonDamageCalc
 {
+    public class CalcEntry
+    {
+        [BsonElement("attackerName")]
+        public string attackerName { get; set; } = "";
+
+        [BsonElement("defenderName")]
+        public string defenderName { get; set; } = "";
+
+        [BsonElement("moveType")]
+        public string moveType { get; set; } = "Normal";
+
+        // physical / special (matches your Category.cs meaning)
+        [BsonElement("category")]
+        public string category { get; set; } = "physical";
+
+        [BsonElement("power")]
+        public int power { get; set; } = 85;
+
+        [BsonElement("attackerLevel")]
+        public int attackerLevel { get; set; } = 100;
+
+        [BsonElement("defenderLevel")]
+        public int defenderLevel { get; set; } = 100;
+
+        [BsonElement("damagePercent")]
+        public double damagePercent { get; set; }
+
+        [BsonElement("createdUtc")]
+        public DateTime createdUtc { get; set; } = DateTime.UtcNow;
+    }
+
     public class Pokelist
     {
-        //mongo PK = teamID
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string? Id { get; set; }
 
-        //link to account's doc id
+        // keep your DB field name if you already have data, but consistent property name
         [BsonElement("accountID")]
         [BsonRepresentation(BsonType.ObjectId)]
         public string accountId { get; set; } = string.Empty;
 
-        [BsonElement("poke1id")]
-        public string poke1id { get; set; }
-        [BsonElement("poke2id")]
-        public string poke2id { get; set; }
-        [BsonElement("poke3id")]
-        public string poke3id { get; set; }
+        // One active list stores up to 3 entries
+        [BsonElement("entries")]
+        public List<CalcEntry> entries { get; set; } = new();
 
-        [BsonElement("poke4id")]
-        public string poke4id { get; set; }
+        [BsonElement("updatedUtc")]
+        public DateTime updatedUtc { get; set; } = DateTime.UtcNow;
 
-        [BsonElement("poke5id")]
-        public string poke5id { get; set; }
-        [BsonElement("poke6id")]
-        public string poke6id { get; set; }
-
-        public Pokelist() { }
-
-        public Pokelist(string teamID, string accountID)
-        {
-            this.Id=teamID;
-            this.accountId=accountID;
-        }
-
-        
+        [BsonElement("createdUtc")]
+        public DateTime createdUtc { get; set; } = DateTime.UtcNow;
     }
 }

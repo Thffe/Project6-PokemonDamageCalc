@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -12,9 +13,7 @@ public class IndexModel : PageModel
     private readonly IMongoCollection<PokemonDocument> _pokemon;
     private readonly PokelistService _pokelistService;
 
-    public IndexModel(
-        IMongoCollection<PokemonDocument> pokemon,
-        PokelistService pokelistService)
+    public IndexModel(IMongoCollection<PokemonDocument> pokemon, PokelistService pokelistService)
     {
         _pokemon = pokemon;
         _pokelistService = pokelistService;
@@ -23,34 +22,156 @@ public class IndexModel : PageModel
     public Pokemon? Attacker { get; private set; }
     public Pokemon? Defender { get; private set; }
 
-    // show logged-in user's saved lists
-    public List<Pokelist> MyPokelists { get; private set; } = new();
+    // Active list for user
+    public Pokelist? ActiveList { get; private set; }
 
-    public async Task OnGetAsync(string? attackerName = null, string? defenderName = null)
+    // Form fields
+    [BindProperty] public int EntryIndex { get; set; } = 0; // 0,1,2
+    [BindProperty] public string AttackerName { get; set; } = "";
+    [BindProperty] public string DefenderName { get; set; } = "";
+    [BindProperty] public string MoveType { get; set; } = "Normal";
+    [BindProperty] public int Power { get; set; } = 85;
+    [BindProperty] public int AttackerLevel { get; set; } = 100;
+    [BindProperty] public int DefenderLevel { get; set; } = 100;
+    [BindProperty] public string Category { get; set; } = "physical";
+
+    public double? LastDamagePercent { get; private set; }
+    public string? UiMessage { get; private set; }
+
+    public async Task OnGetAsync()
     {
-        // Load saved pokelists if authenticated
+        await LoadActiveListIfLoggedIn();
+
+        // If user has entries, prefill with slot 0 to make it feel integrated
+        if (ActiveList?.entries.Count > 0)
+        {
+            var e = ActiveList.entries[0];
+            EntryIndex = 0;
+            AttackerName = e.attackerName;
+            DefenderName = e.defenderName;
+            MoveType = e.moveType;
+            Category = e.category;
+            Power = e.power;
+            AttackerLevel = e.attackerLevel;
+            DefenderLevel = e.defenderLevel;
+
+            await LoadPokemonStatsForCurrentForm();
+        }
+    }
+
+    public async Task<IActionResult> OnPostCalculateAndSaveAsync()
+    {
+        if (User.Identity?.IsAuthenticated != true)
+            return RedirectToPage("/Account");
+
+        var accountId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(accountId))
+            return RedirectToPage("/Account");
+
+        if (EntryIndex < 0 || EntryIndex > 2)
+        {
+            UiMessage = "Entry slot must be 1, 2, or 3.";
+            await LoadActiveListIfLoggedIn();
+            return Page();
+        }
+
+        if (string.IsNullOrWhiteSpace(AttackerName) || string.IsNullOrWhiteSpace(DefenderName))
+        {
+            UiMessage = "Attacker and Defender are required.";
+            await LoadActiveListIfLoggedIn();
+            return Page();
+        }
+
+        if (Power <= 0) Power = 1;
+        if (AttackerLevel <= 0) AttackerLevel = 100;
+        if (DefenderLevel <= 0) DefenderLevel = 100;
+
+        var attackerDoc = await FindPokemonByNameCaseInsensitive(AttackerName);
+        var defenderDoc = await FindPokemonByNameCaseInsensitive(DefenderName);
+
+        if (attackerDoc is null || defenderDoc is null)
+        {
+            UiMessage = "Could not find one or both Pokémon. Try exact names.";
+            await LoadActiveListIfLoggedIn();
+            return Page();
+        }
+
+        var atk = MapToPokemon(attackerDoc, AttackerLevel);
+        var def = MapToPokemon(defenderDoc, DefenderLevel);
+
+        var typeEnum = ParseType(MoveType);
+        var catEnum = string.Equals(Category, "special", StringComparison.OrdinalIgnoreCase)
+            ? Movecategory.special
+            : Movecategory.physical;
+
+        var categoryString = (catEnum == Movecategory.special) ? "special" : "physical";
+
+        var move = new Move(Power, typeEnum, catEnum);
+        var dmgPct = DamageCalc.PrepareCalc(atk, def, move);
+
+        LastDamagePercent = dmgPct;
+
+        var entry = new CalcEntry
+        {
+            attackerName = attackerDoc.Name,
+            defenderName = defenderDoc.Name,
+            moveType = MoveType,
+            category = categoryString,
+            power = Power,
+            attackerLevel = AttackerLevel,
+            defenderLevel = DefenderLevel,
+            damagePercent = dmgPct,
+            createdUtc = DateTime.UtcNow
+        };
+
+        // Save into slot EntryIndex (0-2)
+        ActiveList = await _pokelistService.AddOrReplaceEntryAsync(accountId, EntryIndex, entry);
+
+        // Also update displayed stats
+        Attacker = atk;
+        Defender = def;
+
+        UiMessage = $"Saved slot {EntryIndex + 1}: {Math.Round(dmgPct * 100, 2)}%";
+
+        return Page(); // stay on page so you see result instantly
+    }
+
+    public async Task<IActionResult> OnPostClearListAsync()
+    {
+        if (User.Identity?.IsAuthenticated != true)
+            return RedirectToPage("/Account");
+
+        var accountId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(accountId))
+            return RedirectToPage("/Account");
+
+        await _pokelistService.ClearAsync(accountId);
+        return RedirectToPage();
+    }
+
+    private async Task LoadActiveListIfLoggedIn()
+    {
         if (User.Identity?.IsAuthenticated == true)
         {
             var accountId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!string.IsNullOrWhiteSpace(accountId))
             {
-                MyPokelists = await _pokelistService.getPokelistsFromAnAccount(accountId, limit: 50);
+                ActiveList = await _pokelistService.GetOrCreateActiveAsync(accountId);
             }
         }
+    }
 
-        attackerName ??= "Gengar";
-        defenderName ??= "Jirachi";
+    private async Task LoadPokemonStatsForCurrentForm()
+    {
+        var attackerDoc = await FindPokemonByNameCaseInsensitive(AttackerName);
+        var defenderDoc = await FindPokemonByNameCaseInsensitive(DefenderName);
 
-        var attackerDoc = await FindPokemonByNameCaseInsensitive(attackerName);
-        var defenderDoc = await FindPokemonByNameCaseInsensitive(defenderName);
-
-        Attacker = attackerDoc is null ? null : MapToPokemon(attackerDoc, lvl: 100);
-        Defender = defenderDoc is null ? null : MapToPokemon(defenderDoc, lvl: 100);
+        Attacker = attackerDoc is null ? null : MapToPokemon(attackerDoc, AttackerLevel);
+        Defender = defenderDoc is null ? null : MapToPokemon(defenderDoc, DefenderLevel);
     }
 
     private async Task<PokemonDocument?> FindPokemonByNameCaseInsensitive(string name)
     {
-        // Exact match, case-insensitive: ^name$
         var filter = Builders<PokemonDocument>.Filter.Regex(
             x => x.Name,
             new BsonRegularExpression($"^{Regex.Escape(name)}$", "i")
@@ -70,7 +191,7 @@ public class IndexModel : PageModel
             lvl,
             t1,
             t2,
-            300, // temp HP
+            300, // TODO: replace with real HP when you add it to PokemonDocument
             d.Attack,
             d.Defense,
             d.SpAttack,

@@ -6,108 +6,137 @@
 
 <h1 class="display-4">Pokemon Damage Calculator</h1>
 
-@if (User.Identity?.IsAuthenticated == true)
-{
-    <h3>Your Saved Pokelists</h3>
-
-    @if (Model.MyPokelists.Count == 0)
-    {
-        <p><i>You don’t have any saved pokelists yet.</i></p>
-    }
-    else
-    {
-        <ul>
-            @foreach (var list in Model.MyPokelists)
-            {
-                <li>
-                    <b>List ID:</b> @list.Id
-                    <br />
-                    <b>Pokémon IDs:</b>
-                    @list.poke1id, @list.poke2id, @list.poke3id, @list.poke4id, @list.poke5id, @list.poke6id
-                </li>
-            }
-        </ul>
-    }
-}
-else
+@if (User.Identity?.IsAuthenticated != true)
 {
     <p>
-        <i>Login to view and save your pokelists.</i>
+        <i>Login to save your calculation list.</i>
         <a href="/Account">Go to Account</a>
     </p>
 }
-
-@if (Model.Attacker == null || Model.Defender == null)
+else
 {
-    <p style="color:red;">One or more Pokémon names weren’t found. Try exact names (ex: Gengar).</p>
+    <h3>Active Calculation List (up to 3)</h3>
+
+    @if (!string.IsNullOrWhiteSpace(Model.UiMessage))
+    {
+        <p style="color:green;"><b>@Model.UiMessage</b></p>
+    }
+
+    <form method="post" asp-page-handler="CalculateAndSave">
+        <label>Slot</label>
+        <select asp-for="EntryIndex">
+            <option value="0">1</option>
+            <option value="1">2</option>
+            <option value="2">3</option>
+        </select>
+
+        <label>Attacker</label>
+        <input asp-for="AttackerName" list="attackerSuggestions" autocomplete="off" />
+        <datalist id="attackerSuggestions"></datalist>
+
+        <label>Defender</label>
+        <input asp-for="DefenderName" list="defenderSuggestions" autocomplete="off" />
+        <datalist id="defenderSuggestions"></datalist>
+
+        <label>Atk Level</label>
+        <input asp-for="AttackerLevel" type="number" />
+
+        <label>Def Level</label>
+        <input asp-for="DefenderLevel" type="number" />
+
+        <label>Move Type</label>
+        <select asp-for="MoveType">
+            <option>Normal</option>
+            <option>Fire</option>
+            <option>Water</option>
+            <option>Electric</option>
+            <option>Grass</option>
+            <option>Ice</option>
+            <option>Fighting</option>
+            <option>Poison</option>
+            <option>Ground</option>
+            <option>Flying</option>
+            <option>Psychic</option>
+            <option>Bug</option>
+            <option>Rock</option>
+            <option>Ghost</option>
+            <option>Dragon</option>
+            <option>Dark</option>
+            <option>Steel</option>
+            <option>Fairy</option>
+        </select>
+
+        <label>Category</label>
+        <select asp-for="Category">
+            <option value="physical">physical</option>
+            <option value="special">special</option>
+        </select>
+
+        <label>Power</label>
+        <input asp-for="Power" type="number" />
+
+        <button type="submit">Calculate & Save</button>
+    </form>
+
+    <form method="post" asp-page-handler="ClearList" style="margin-top:10px;">
+        <button type="submit">Clear Active List</button>
+    </form>
+
+    <h3 style="margin-top:20px;">Saved Entries</h3>
+    @if (Model.ActiveList == null || Model.ActiveList.entries.Count == 0)
+    {
+        <p><i>No saved entries yet.</i></p>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Slot</th>
+                    <th>When</th>
+                    <th>Attacker</th>
+                    <th>Defender</th>
+                    <th>Type</th>
+                    <th>Cat</th>
+                    <th>Power</th>
+                    <th>Damage %</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.ActiveList.entries.Count; i++)
+                {
+                    var e = Model.ActiveList.entries[i];
+                    <tr>
+                        <td>@(i + 1)</td>
+                        <td>@e.createdUtc.ToLocalTime()</td>
+                        <td>@e.attackerName (@e.attackerLevel)</td>
+                        <td>@e.defenderName (@e.defenderLevel)</td>
+                        <td>@e.moveType</td>
+                        <td>@e.category</td>
+                        <td>@e.power</td>
+                        <td>@(Math.Round(e.damagePercent * 100, 2))%</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
 }
 
-<div class="flex-container">
-    <div class="element1">
-        <h2>Attacker</h2>
-        <pre>@(Model.Attacker?.toString() ?? "Attacker not found in DB")</pre>
-        <cache>Level:</cache>
-        <input id="atklvl" name="atklvl" type="text" placeholder="100" />
+@if (Model.Attacker != null && Model.Defender != null)
+{
+    <hr />
+    <div class="flex-container">
+        <div class="element1">
+            <h2>Attacker</h2>
+            <pre>@Model.Attacker.toString()</pre>
+        </div>
+
+        <div class="element2">
+            <h2>Defender</h2>
+            <pre>@Model.Defender.toString()</pre>
+        </div>
     </div>
-
-    <div class="element2">
-        <h2>Defender</h2>
-        <pre>@(Model.Defender?.toString() ?? "Defender not found in DB")</pre>
-        <a>Level:</a>
-        <input id="deflvl" name="deflvl" type="text" placeholder="100" />
-    </div>
-    <div class="element3">
-        <h2>Move</h2>
-        <br />
-        <a>Choose a type</a>
-        <select name="types" id="types">
-            <option value="Normal">Normal</option>
-            <option value="Fire">Fire</option>
-            <option value="Water">Water</option>
-            <option value="Electric">Electric</option>
-            <option value="Grass">Grass</option>
-            <option value="Ice">Ice</option>
-            <option value="Fighting">Fighting</option>
-            <option value="Poison">Poison</option>
-            <option value="Ground">Ground</option>
-            <option value="Flying">Flying</option>
-            <option value="Psychic">Psychic</option>
-            <option value="Bug">Bug</option>
-            <option value="Rock">Rock</option>
-            <option value="Ghost">Ghost</option>
-            <option value="Dragon">Dragon</option>
-            <option value="Dark">Dark</option>
-            <option value="Steel">Steel</option>
-            <option value="Fairy">Fairy</option>
-        </select>
-        <br />
-        <br />
-        <a>Power</a>
-        <input id="power" name="power" type="text" placeholder="85" />
-    </div>
-</div>
-
-<br />
-
-<form method="get">
-    <label for="attackerName">Attacker name</label>
-    <input type="search"
-           id="attackerName"
-           name="attackerName"
-           list="attackerSuggestions"
-           autocomplete="off" />
-    <datalist id="attackerSuggestions"></datalist>
-
-    <label for="defenderName">Defender name</label>
-    <input type="search"
-           id="defenderName"
-           name="defenderName"
-           list="defenderSuggestions"
-           autocomplete="off" />
-    <datalist id="defenderSuggestions"></datalist>
-
-    <button type="submit">Load</button>
-</form>
+}
 
 <script>
     function debounce(fn, delayMs) {
@@ -134,8 +163,9 @@ else
       }
     }
 
-    const attacker = document.getElementById("attackerName");
-    const defender = document.getElementById("defenderName");
+    // Because asp-for generates IDs equal to property names:
+    const attacker = document.getElementById("AttackerName");
+    const defender = document.getElementById("DefenderName");
     const attackerList = document.getElementById("attackerSuggestions");
     const defenderList = document.getElementById("defenderSuggestions");
 

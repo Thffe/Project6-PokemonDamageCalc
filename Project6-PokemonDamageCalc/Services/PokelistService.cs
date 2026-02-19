@@ -14,7 +14,7 @@ namespace Project6_PokemonDamageCalc.Services
         public async Task<List<Pokelist>> getAllPokelistsAsync(int limit = 50)
             => await _pokelists.Find(_ => true).Limit(limit).ToListAsync();
 
-        public async Task<List<Pokelist>> getPokelistsFromAnAccount(string accountId, int limit = 2)
+        public async Task<List<Pokelist>> getPokelistsFromAnAccount(string accountId, int limit = 50)
             => await _pokelists.Find(p => p.accountId == accountId).Limit(limit).ToListAsync();
 
         public async Task<Pokelist?> getByTeamIDAsync(string id)

@@ -1,37 +1,66 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using MongoDB.Bson;
 using MongoDB.Driver;
+using Project6_PokemonDamageCalc.Services;
+using System.Security.Claims;
+using System.Text.RegularExpressions;
 
 namespace Project6_PokemonDamageCalc.Pages;
 
 public class IndexModel : PageModel
 {
     private readonly IMongoCollection<PokemonDocument> _pokemon;
+    private readonly PokelistService _pokelistService;
 
-    public IndexModel(IMongoCollection<PokemonDocument> pokemon)
+    public IndexModel(
+        IMongoCollection<PokemonDocument> pokemon,
+        PokelistService pokelistService)
     {
         _pokemon = pokemon;
+        _pokelistService = pokelistService;
     }
 
     public Pokemon? Attacker { get; private set; }
     public Pokemon? Defender { get; private set; }
 
+    // show logged-in user's saved lists
+    public List<Pokelist> MyPokelists { get; private set; } = new();
+
     public async Task OnGetAsync(string? attackerName = null, string? defenderName = null)
     {
+        // Load saved pokelists if authenticated
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            var accountId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrWhiteSpace(accountId))
+            {
+                MyPokelists = await _pokelistService.getPokelistsFromAnAccount(accountId, limit: 50);
+            }
+        }
+
         attackerName ??= "Gengar";
         defenderName ??= "Jirachi";
 
-        var attackerDoc = await _pokemon.Find(p => p.Name == attackerName).FirstOrDefaultAsync();
-        var defenderDoc = await _pokemon.Find(p => p.Name == defenderName).FirstOrDefaultAsync();
+        var attackerDoc = await FindPokemonByNameCaseInsensitive(attackerName);
+        var defenderDoc = await FindPokemonByNameCaseInsensitive(defenderName);
 
-        // Level is not in your Mongo doc in a way you want to use for battles.
-        // For baseline, keep level = 100 like your existing page.
         Attacker = attackerDoc is null ? null : MapToPokemon(attackerDoc, lvl: 100);
-        Defender = defenderDoc is null ? null : MapToPokemon(defenderDoc, lvl: 89); // your old Jirachi was 89
+        Defender = defenderDoc is null ? null : MapToPokemon(defenderDoc, lvl: 100);
+    }
+
+    private async Task<PokemonDocument?> FindPokemonByNameCaseInsensitive(string name)
+    {
+        // Exact match, case-insensitive: ^name$
+        var filter = Builders<PokemonDocument>.Filter.Regex(
+            x => x.Name,
+            new BsonRegularExpression($"^{Regex.Escape(name)}$", "i")
+        );
+
+        return await _pokemon.Find(filter).FirstOrDefaultAsync();
     }
 
     private static Pokemon MapToPokemon(PokemonDocument d, int lvl)
     {
-        // Your enum is lowercase. Dataset strings are Title case.
         var t1 = ParseType(d.Type1);
         var t2 = string.IsNullOrWhiteSpace(d.Type2) ? Type.Normal : ParseType(d.Type2);
 
@@ -41,8 +70,7 @@ public class IndexModel : PageModel
             lvl,
             t1,
             t2,
-            //NOT ACTUALLY GETTING HEALTH CURRENTLY (TEMP FIX)
-            300,
+            300, // temp HP
             d.Attack,
             d.Defense,
             d.SpAttack,

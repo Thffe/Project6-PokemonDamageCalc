@@ -6,6 +6,37 @@
 
 <h1 class="display-4">Pokemon Damage Calculator</h1>
 
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <h3>Your Saved Pokelists</h3>
+
+    @if (Model.MyPokelists.Count == 0)
+    {
+        <p><i>You don’t have any saved pokelists yet.</i></p>
+    }
+    else
+    {
+        <ul>
+            @foreach (var list in Model.MyPokelists)
+            {
+                <li>
+                    <b>List ID:</b> @list.Id
+                    <br />
+                    <b>Pokémon IDs:</b>
+                    @list.poke1id, @list.poke2id, @list.poke3id, @list.poke4id, @list.poke5id, @list.poke6id
+                </li>
+            }
+        </ul>
+    }
+}
+else
+{
+    <p>
+        <i>Login to view and save your pokelists.</i>
+        <a href="/Account">Go to Account</a>
+    </p>
+}
+
 @if (Model.Attacker == null || Model.Defender == null)
 {
     <p style="color:red;">One or more Pokémon names weren’t found. Try exact names (ex: Gengar).</p>
@@ -55,8 +86,9 @@
         <input id="power" name="power" type="text" placeholder="85" />
     </div>
 </div>
+
 <br />
-<!-- Search (baseline): make sure name attribute exists -->
+
 <form method="get">
     <label for="attackerName">Attacker name</label>
     <input type="search"
@@ -89,7 +121,7 @@
     async function updateSuggestions(inputEl, datalistEl) {
       const term = inputEl.value.trim();
       datalistEl.innerHTML = "";
-      if (term.length < 2) return; // don’t spam DB on 1 char
+      if (term.length < 2) return;
 
       const resp = await fetch(`/api/pokemon/search?term=${encodeURIComponent(term)}`);
       if (!resp.ok) return;
@@ -97,7 +129,7 @@
       const results = await resp.json();
       for (const r of results) {
         const opt = document.createElement("option");
-        opt.value = r.name;  // IMPORTANT: datalist uses "value"
+        opt.value = r.name;
         datalistEl.appendChild(opt);
       }
     }

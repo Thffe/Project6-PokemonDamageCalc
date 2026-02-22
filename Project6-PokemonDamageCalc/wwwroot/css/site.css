@@ -18,7 +18,10 @@ html {
 }
 
 body {
-  margin-bottom: 60px;
+    margin-bottom: 60px;
+    background-image: url("pokeball.jpg");
+    background-repeat: no-repeat;
+    background-size: cover;
 }
 
 .flex-container {

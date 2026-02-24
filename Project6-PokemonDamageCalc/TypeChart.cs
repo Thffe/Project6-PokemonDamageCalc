@@ -3,143 +3,143 @@
 
         public static double getEffective(Type a, Type d) {
 
-            if (a == Type.normal) {
-                if (d == Type.rock || d == Type.steel)
+            if (a == Type.Normal) {
+                if (d == Type.Rock || d == Type.Steel)
                     return 0.5;
-                else if (d == Type.ghost)
+                else if (d == Type.Ghost)
                     return 0;
                 else
                     return 1;
-            } else if (a == Type.fire) {
-                if (d == Type.grass || d == Type.ice || d == Type.bug || d == Type.steel)
+            } else if (a == Type.Fire) {
+                if (d == Type.Grass || d == Type.Ice || d == Type.Bug || d == Type.Steel)
                     return 2;
-                else if (d == Type.water || d == Type.fire || d == Type.rock || d == Type.dragon)
+                else if (d == Type.Water || d == Type.Fire || d == Type.Rock || d == Type.Dragon)
                     return 0.5;
                 else
                     return 1;
-            } else if (a == Type.water) {
-                if (d == Type.fire || d == Type.ground || d == Type.rock)
+            } else if (a == Type.Water) {
+                if (d == Type.Fire || d == Type.Ground || d == Type.Rock)
                     return 2;
-                else if (d == Type.water || d == Type.grass || d == Type.dragon)
+                else if (d == Type.Water || d == Type.Grass || d == Type.Dragon)
                     return 0.5;
                 else
                     return 1;
-            } else if (a == Type.electric) {
-                if (d == Type.water || d == Type.flying)
+            } else if (a == Type.Electric) {
+                if (d == Type.Water || d == Type.Flying)
                     return 2;
-                else if (d == Type.electric || d == Type.dragon)
+                else if (d == Type.Electric || d == Type.Dragon)
                     return 0.5;
-                else if (d == Type.ground)
+                else if (d == Type.Ground)
                     return 0;
                 else
                     return 1;
-            } else if (a == Type.grass) {
-                if (d == Type.water || d == Type.ground || d == Type.rock)
+            } else if (a == Type.Grass) {
+                if (d == Type.Water || d == Type.Ground || d == Type.Rock)
                     return 2;
-                else if (d == Type.fire || d == Type.grass || d == Type.dragon || d == Type.poison || d == Type.flying || d == Type.bug || d == Type.steel)
+                else if (d == Type.Fire || d == Type.Grass || d == Type.Dragon || d == Type.Poison || d == Type.Flying || d == Type.Bug || d == Type.Steel)
                     return 0.5;
                 else
                     return 1;
-            } else if (a == Type.ice) {
-                if (d == Type.grass || d == Type.ground || d == Type.flying || d == Type.dragon)
+            } else if (a == Type.Ice) {
+                if (d == Type.Grass || d == Type.Ground || d == Type.Flying || d == Type.Dragon)
                     return 2;
-                else if (d == Type.fire || d == Type.water || d == Type.ice || d == Type.steel)
+                else if (d == Type.Fire || d == Type.Water || d == Type.Ice || d == Type.Steel)
                     return 0.5;
                 else
                     return 1;
-            } else if (a == Type.fighting) {
-                if (d == Type.normal || d == Type.ice || d == Type.rock || d == Type.dark || d == Type.steel)
+            } else if (a == Type.Fighting) {
+                if (d == Type.Normal || d == Type.Ice || d == Type.Rock || d == Type.Dark || d == Type.Steel)
                     return 2;
-                else if (d == Type.poison || d == Type.flying || d == Type.psychic || d == Type.bug || d == Type.fairy)
+                else if (d == Type.Poison || d == Type.Flying || d == Type.Psychic || d == Type.Bug || d == Type.Fairy)
                     return 0.5;
-                else if (d == Type.ghost)
+                else if (d == Type.Ghost)
                     return 0;
                 else
                     return 1;
-            } else if (a == Type.poison) {
-                if (d == Type.grass || d == Type.fairy)
+            } else if (a == Type.Poison) {
+                if (d == Type.Grass || d == Type.Fairy)
                     return 2;
-                else if (d == Type.poison || d == Type.ground || d == Type.rock || d == Type.ghost)
+                else if (d == Type.Poison || d == Type.Ground || d == Type.Rock || d == Type.Ghost)
                     return 0.5;
-                else if (d == Type.steel)
+                else if (d == Type.Steel)
                     return 0;
                 else
                     return 1;
-            } else if (a == Type.ground) {
-                if (d == Type.fire || d == Type.electric || d == Type.poison || d == Type.fairy)
+            } else if (a == Type.Ground) {
+                if (d == Type.Fire || d == Type.Electric || d == Type.Poison || d == Type.Fairy)
                     return 2;
-                else if (d == Type.grass || d == Type.bug)
+                else if (d == Type.Grass || d == Type.Bug)
                     return 0.5;
-                else if (d == Type.flying)
+                else if (d == Type.Flying)
                     return 0;
                 else
                     return 1;
-            } else if (a == Type.flying) {
-                if (d == Type.grass || d == Type.fighting || d == Type.bug)
+            } else if (a == Type.Flying) {
+                if (d == Type.Grass || d == Type.Fighting || d == Type.Bug)
                     return 2;
-                else if (d == Type.electric || d == Type.rock || d == Type.steel)
+                else if (d == Type.Electric || d == Type.Rock || d == Type.Steel)
                     return 0.5;
                 else
                     return 1;
-            } else if (a == Type.psychic) {
-                if (d == Type.fighting || d == Type.poison)
+            } else if (a == Type.Psychic) {
+                if (d == Type.Fighting || d == Type.Poison)
                     return 2;
-                else if (d == Type.psychic || d == Type.steel)
+                else if (d == Type.Psychic || d == Type.Steel)
                     return 0.5;
-                else if (d == Type.dark)
+                else if (d == Type.Dark)
                     return 0;
                 else
                     return 1;
-            } else if (a == Type.bug) {
-                if (d == Type.bug || d == Type.psychic || d == Type.dark)
+            } else if (a == Type.Bug) {
+                if (d == Type.Bug || d == Type.Psychic || d == Type.Dark)
                     return 2;
-                else if (d == Type.fire || d == Type.fighting || d == Type.poison || d == Type.flying || d == Type.ghost || d == Type.steel || d == Type.fairy)
+                else if (d == Type.Fire || d == Type.Fighting || d == Type.Poison || d == Type.Flying || d == Type.Ghost || d == Type.Steel || d == Type.Fairy)
                     return 0.5;
                 else
                     return 1;
-            } else if (a == Type.rock) {
-                if (d == Type.fire || d == Type.ice || d == Type.flying || d == Type.bug)
+            } else if (a == Type.Rock) {
+                if (d == Type.Fire || d == Type.Ice || d == Type.Flying || d == Type.Bug)
                     return 2;
-                else if (d == Type.fighting || d == Type.ground || d == Type.steel)
+                else if (d == Type.Fighting || d == Type.Ground || d == Type.Steel)
                     return 0.5;
                 else
                     return 1;
-            } else if (a == Type.ghost) {
-                if (d == Type.bug || d == Type.ghost)
+            } else if (a == Type.Ghost) {
+                if (d == Type.Bug || d == Type.Ghost)
                     return 2;
-                else if (d == Type.dark)
+                else if (d == Type.Dark)
                     return 0.5;
-                else if (d == Type.normal)
+                else if (d == Type.Normal)
                     return 0;
                 else
                     return 1;
-            } else if (a == Type.dragon) {
-                if (d == Type.dragon)
+            } else if (a == Type.Dragon) {
+                if (d == Type.Dragon)
                     return 2;
-                else if (d == Type.steel)
+                else if (d == Type.Steel)
                     return 0.5;
-                else if (d == Type.fairy)
+                else if (d == Type.Fairy)
                     return 0;
                 else
                     return 1;
-            } else if (a == Type.dark) {
-                if (d == Type.psychic || d == Type.ghost)
+            } else if (a == Type.Dark) {
+                if (d == Type.Psychic || d == Type.Ghost)
                     return 2;
-                else if (d == Type.fighting || d == Type.dark || d == Type.fairy)
+                else if (d == Type.Fighting || d == Type.Dark || d == Type.Fairy)
                     return 0.5;
                 else
                     return 1;
-            } else if (a == Type.steel) {
-                if (d == Type.ice || d == Type.rock || d == Type.fairy)
+            } else if (a == Type.Steel) {
+                if (d == Type.Ice || d == Type.Rock || d == Type.Fairy)
                     return 2;
-                else if (d == Type.fire || d == Type.water || d == Type.electric || d == Type.steel)
+                else if (d == Type.Fire || d == Type.Water || d == Type.Electric || d == Type.Steel)
                     return 0.5;
                 else
                     return 1;
-            } else if (a == Type.fairy) {
-                if (d == Type.fighting || d == Type.dark || d == Type.dragon)
+            } else if (a == Type.Fairy) {
+                if (d == Type.Fighting || d == Type.Dark || d == Type.Dragon)
                     return 2;
-                else if (d == Type.fire || d == Type.poison || d == Type.steel)
+                else if (d == Type.Fire || d == Type.Poison || d == Type.Steel)
                     return 0.5;
                 else
                     return 1;

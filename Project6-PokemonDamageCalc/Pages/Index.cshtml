@@ -1,32 +1,174 @@
 ﻿@page
-@model IndexModel
+@model Project6_PokemonDamageCalc.Pages.IndexModel
 @{
     ViewData["Title"] = "Home page";
 }
- @{
-        Pokemon gengar = new Pokemon(94, "Gengar", 100, Project6_PokemonDamageCalc.Type.ghost, Project6_PokemonDamageCalc.Type.poison, 65, 60, 130, 75, 1.5, 40.5);
-        Pokemon jirachi = new Pokemon(385, "Jirachi", 89, Project6_PokemonDamageCalc.Type.steel, Project6_PokemonDamageCalc.Type.psychic, 100, 100, 100, 100, 0.3, 1.1);
-        Move shadowball = new Move(80, Project6_PokemonDamageCalc.Type.ghost, Movecategory.special);
 
+<h1 class="display-4">Pokemon Damage Calculator</h1>
+
+@if (User.Identity?.IsAuthenticated != true)
+{
+    <p>
+        <i>Login to save your calculation list.</i>
+        <a href="/Account">Go to Account</a>
+    </p>
+}
+else
+{
+    <h3>Active Calculation List (up to 3)</h3>
+
+    @if (!string.IsNullOrWhiteSpace(Model.UiMessage))
+    {
+        <p style="color:green;"><b>@Model.UiMessage</b></p>
     }
 
-    <h1 class="display-4">Pokemon Damage Calculator</h1>
-<div class="flex-container">
-    <div class="element1">
-    <h2>Attacker</h2>
-    <pre>@gengar.toString()</pre>
+    <form method="post" asp-page-handler="CalculateAndSave">
+        <label>Slot</label>
+        <select asp-for="EntryIndex">
+            <option value="0">1</option>
+            <option value="1">2</option>
+            <option value="2">3</option>
+        </select>
+
+        <label>Attacker</label>
+        <input asp-for="AttackerName" list="attackerSuggestions" autocomplete="off" />
+        <datalist id="attackerSuggestions"></datalist>
+
+        <label>Defender</label>
+        <input asp-for="DefenderName" list="defenderSuggestions" autocomplete="off" />
+        <datalist id="defenderSuggestions"></datalist>
+
+        <label>Atk Level</label>
+        <input asp-for="AttackerLevel" type="number" />
+
+        <label>Def Level</label>
+        <input asp-for="DefenderLevel" type="number" />
+
+        <label>Move Type</label>
+        <select asp-for="MoveType">
+            <option>Normal</option>
+            <option>Fire</option>
+            <option>Water</option>
+            <option>Electric</option>
+            <option>Grass</option>
+            <option>Ice</option>
+            <option>Fighting</option>
+            <option>Poison</option>
+            <option>Ground</option>
+            <option>Flying</option>
+            <option>Psychic</option>
+            <option>Bug</option>
+            <option>Rock</option>
+            <option>Ghost</option>
+            <option>Dragon</option>
+            <option>Dark</option>
+            <option>Steel</option>
+            <option>Fairy</option>
+        </select>
+
+        <label>Category</label>
+        <select asp-for="Category">
+            <option value="physical">physical</option>
+            <option value="special">special</option>
+        </select>
+
+        <label>Power</label>
+        <input asp-for="Power" type="number" />
+
+        <button type="submit">Calculate & Save</button>
+    </form>
+
+    <form method="post" asp-page-handler="ClearList" style="margin-top:10px;">
+        <button type="submit">Clear Active List</button>
+    </form>
+
+    <h3 style="margin-top:20px;">Saved Entries</h3>
+    @if (Model.ActiveList == null || Model.ActiveList.entries.Count == 0)
+    {
+        <p><i>No saved entries yet.</i></p>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Slot</th>
+                    <th>When</th>
+                    <th>Attacker</th>
+                    <th>Defender</th>
+                    <th>Type</th>
+                    <th>Cat</th>
+                    <th>Power</th>
+                    <th>Damage %</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.ActiveList.entries.Count; i++)
+                {
+                    var e = Model.ActiveList.entries[i];
+                    <tr>
+                        <td>@(i + 1)</td>
+                        <td>@e.createdUtc.ToLocalTime()</td>
+                        <td>@e.attackerName (@e.attackerLevel)</td>
+                        <td>@e.defenderName (@e.defenderLevel)</td>
+                        <td>@e.moveType</td>
+                        <td>@e.category</td>
+                        <td>@e.power</td>
+                        <td>@(Math.Round(e.damagePercent * 100, 2))%</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@if (Model.Attacker != null && Model.Defender != null)
+{
+    <hr />
+    <div class="flex-container">
+        <div class="element1">
+            <h2>Attacker</h2>
+            <pre>@Model.Attacker.toString()</pre>
+        </div>
+
+        <div class="element2">
+            <h2>Defender</h2>
+            <pre>@Model.Defender.toString()</pre>
+        </div>
     </div>
-    <div class="element2">
-    <h2>Defender</h2>
-    <pre>@jirachi.toString()</pre>
-    </div>
-</div>
+}
 
+<script>
+    function debounce(fn, delayMs) {
+      let t;
+      return (...args) => {
+        clearTimeout(t);
+        t = setTimeout(() => fn(...args), delayMs);
+      };
+    }
 
+    async function updateSuggestions(inputEl, datalistEl) {
+      const term = inputEl.value.trim();
+      datalistEl.innerHTML = "";
+      if (term.length < 2) return;
 
-   <! Search for Pokemon to add to team>
-<form action="search" method="get">
-    <label for="pkmnsearch">Search for Pokemon</label>
-    <input type="search" id="pkmnsearch" />
-    <button type="submit">Go</button>
-</form>
+      const resp = await fetch(`/api/pokemon/search?term=${encodeURIComponent(term)}`);
+      if (!resp.ok) return;
+
+      const results = await resp.json();
+      for (const r of results) {
+        const opt = document.createElement("option");
+        opt.value = r.name;
+        datalistEl.appendChild(opt);
+      }
+    }
+
+    // Because asp-for generates IDs equal to property names:
+    const attacker = document.getElementById("AttackerName");
+    const defender = document.getElementById("DefenderName");
+    const attackerList = document.getElementById("attackerSuggestions");
+    const defenderList = document.getElementById("defenderSuggestions");
+
+    attacker.addEventListener("input", debounce(() => updateSuggestions(attacker, attackerList), 150));
+    defender.addEventListener("input", debounce(() => updateSuggestions(defender, defenderList), 150));
+</script>

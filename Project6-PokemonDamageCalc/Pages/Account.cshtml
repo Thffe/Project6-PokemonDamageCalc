@@ -1,0 +1,50 @@
+﻿@page
+@model Project6_PokemonDamageCalc.Pages.AccountModel
+@{
+    ViewData["Title"] = "Account";
+}
+
+<h1>Account</h1>
+
+@if (!string.IsNullOrWhiteSpace(Model.Message))
+{
+    <p><b>@Model.Message</b></p>
+}
+
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <h2>Logged In</h2>
+    <p><b>Username:</b> @Model.CurrentUsername</p>
+    <p><b>AccountId:</b> @Model.CurrentAccountId</p>
+
+    @if (!string.IsNullOrWhiteSpace(Model.CurrentPfpUrl))
+    {
+        <div style="margin:10px 0;">
+            <p><b>Profile Picture:</b></p>
+            <img src="@Model.CurrentPfpUrl" alt="Profile picture" style="max-width:180px; border:1px solid #ccc; padding:4px;" />
+        </div>
+    }
+
+    <h3>Upload / Change Profile Picture</h3>
+    <form method="post" asp-page-handler="UploadPfp" enctype="multipart/form-data">
+        <input type="file" asp-for="ProfilePicture" accept="image/png,image/jpeg,image/webp,image/gif" />
+        <button type="submit">Upload</button>
+    </form>
+
+    <form method="post" asp-page-handler="Logout" style="margin-top: 10px;">
+        <button type="submit">Logout</button>
+    </form>
+}
+else
+{
+    <h2>Register / Login</h2>
+
+    <form method="post">
+        <label>Username:</label>
+        <input type="text" asp-for="Username" required />
+        <div style="margin-top: 10px;">
+            <button type="submit" asp-page-handler="Register">Register</button>
+            <button type="submit" asp-page-handler="Login">Login</button>
+        </div>
+    </form>
+}

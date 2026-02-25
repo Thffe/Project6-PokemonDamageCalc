@@ -9,33 +9,33 @@ namespace Project6_PokemonDamageCalc.Services
         public AccountService(IMongoDatabase db)
         {
             _accounts = db.GetCollection<Account>("accounts");
-            // Ensure unique index on username (tolerant if index already exists)
-            try
-            {
-                var existingIndexes = _accounts.Indexes.List().ToList();
+            //// Ensure unique index on username (tolerant if index already exists)
+            //try
+            //{
+            //    var existingIndexes = _accounts.Indexes.List().ToList();
 
-                // Look for any index whose key is { username: 1 }
-                var hasUsernameIndex = existingIndexes.Any(idx =>
-                    idx.Contains("key") &&
-                    idx["key"].AsBsonDocument.TryGetValue("username", out var v) &&
-                    v.ToInt32() == 1
-                );
+            //    // Look for any index whose key is { username: 1 }
+            //    var hasUsernameIndex = existingIndexes.Any(idx =>
+            //        idx.Contains("key") &&
+            //        idx["key"].AsBsonDocument.TryGetValue("username", out var v) &&
+            //        v.ToInt32() == 1
+            //    );
 
-                if (!hasUsernameIndex)
-                {
-                    var indexKeys = Builders<Account>.IndexKeys.Ascending(a => a.username);
-                    var indexModel = new CreateIndexModel<Account>(
-                        indexKeys,
-                        new CreateIndexOptions { Unique = true, Name = "ux_accounts_username" }
-                    );
-                    _accounts.Indexes.CreateOne(indexModel);
-                }
-            }
-            catch (Exception ex)
-            {
-                // Don't block app startup in production if index ops fail
-                Console.WriteLine("Index check/create failed: " + ex.Message);
-            }
+            //    if (!hasUsernameIndex)
+            //    {
+            //        var indexKeys = Builders<Account>.IndexKeys.Ascending(a => a.username);
+            //        var indexModel = new CreateIndexModel<Account>(
+            //            indexKeys,
+            //            new CreateIndexOptions { Unique = true, Name = "ux_accounts_username" }
+            //        );
+            //        _accounts.Indexes.CreateOne(indexModel);
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    // Don't block app startup in production if index ops fail
+            //    Console.WriteLine("Index check/create failed: " + ex.Message);
+            //}
         }
 
         private static string NormalizeUsername(string username)

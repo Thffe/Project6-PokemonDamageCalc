@@ -119,14 +119,21 @@ app.MapGet("/api/pokemon", async ([FromServices] IMongoCollection<PokemonDocumen
 });
 
 // API search endpoint:
+//try opt
 app.MapGet("/api/pokemon/search", async (IMongoCollection<PokemonDocument> col, string term) =>
 {
-    if (string.IsNullOrWhiteSpace(term))
+    term = term?.Trim() ?? "";
+    if (term.Length < 2)
         return Results.Ok(Array.Empty<object>());
+
+    //index runs faster?
+    //add prefix search
+    var pattern = "^" + Regex.Escape(term);
 
     var filter = Builders<PokemonDocument>.Filter.Regex(
         x => x.Name,
-        new MongoDB.Bson.BsonRegularExpression(term, "i")
+        //new MongoDB.Bson.BsonRegularExpression(term, "i")
+        new MongoDB.Bson.BsonRegularExpression(pattern, "i")
     );
 
     var results = await col.Find(filter)

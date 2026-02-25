@@ -28,6 +28,18 @@ var mongoCollectionName =
 var settings = MongoClientSettings.FromConnectionString(mongoUri);
 settings.ServerApi = new ServerApi(ServerApiVersion.V1);
 
+// Free-tier friendly tuning
+settings.MaxConnectionPoolSize = 50;                 // keep this modest on free tier
+settings.MinConnectionPoolSize = 0;                  // don’t pre-open tons of conns on free tier
+settings.WaitQueueTimeout = TimeSpan.FromSeconds(15);// fail faster instead of hanging for 70s+
+
+settings.ServerSelectionTimeout = TimeSpan.FromSeconds(10);
+settings.ConnectTimeout = TimeSpan.FromSeconds(10);
+settings.SocketTimeout = TimeSpan.FromSeconds(20);
+
+settings.RetryWrites = true;
+settings.RetryReads = true;
+
 var client = new MongoClient(settings);
 
 // Optional ping on startup

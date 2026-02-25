@@ -9,6 +9,13 @@ namespace Project6_PokemonDamageCalc.Services
         public AccountService(IMongoDatabase db)
         {
             _accounts = db.GetCollection<Account>("accounts");
+            // Ensure unique index on username (fast lookups + prevents duplicates)
+            var indexKeys = Builders<Account>.IndexKeys.Ascending(a => a.username);
+            var indexModel = new CreateIndexModel<Account>(
+                indexKeys,
+                new CreateIndexOptions { Unique = true, Name = "ux_accounts_username" }
+            );
+            _accounts.Indexes.CreateOne(indexModel);
         }
 
         private static string NormalizeUsername(string username)
